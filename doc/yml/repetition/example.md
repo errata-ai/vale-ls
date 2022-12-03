@@ -1,0 +1,8 @@
+```yaml
+extends: repetition
+message: "'%s' is repeated!"
+level: error
+alpha: true
+tokens:
+  - '[^\s]+'
+```
