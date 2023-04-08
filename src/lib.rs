@@ -14,6 +14,7 @@
 pub mod error;
 pub mod ini;
 pub mod server;
+pub mod styles;
 pub mod utils;
 pub mod vale;
 pub mod yml;
