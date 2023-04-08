@@ -1,0 +1,6 @@
+extends: existence
+message: "Callout numbers should be sequential"
+level: error
+scripts:
+  - name: sequential-callout-numbering
+    file: sequential-callout-numbering.sh

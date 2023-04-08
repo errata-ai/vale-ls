@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use crate::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum EntryType {
     Style,
     Vocab,
@@ -64,7 +64,23 @@ impl StylesPath {
         Ok(())
     }
 
-    fn index(&self, name: &str) -> Result<Vec<PathEntry>, Error> {
+    pub fn count(&self, kind: EntryType) -> Result<usize, Error> {
+        let idx = self.index()?;
+        Ok(idx.iter().filter(|e| e.kind == kind).count())
+    }
+
+    pub fn get(&self, kind: EntryType, name: &str) -> Result<PathEntry, Error> {
+        let idx = self.index()?;
+
+        let entry = idx
+            .iter()
+            .find(|e| e.kind == kind && e.name == name)
+            .ok_or(Error::Msg("Not found".to_string()))?;
+
+        Ok(entry.clone())
+    }
+
+    fn index(&self) -> Result<Vec<PathEntry>, Error> {
         let subdirs = fs::read_dir(self.path())?;
         let mut entries = Vec::new();
 
@@ -107,15 +123,38 @@ impl StylesPath {
             .map(|r| r.unwrap().path())
             .for_each({
                 |path| {
-                    entries.push(PathEntry {
-                        name: self.entry_name(path.clone()),
-                        size: 0,
-                        path: path.clone(),
-                        kind: kind.clone(),
-                    });
+                    let ext = path.extension().unwrap_or("".as_ref());
+                    if ext == "yml" || (path.is_dir() && kind == EntryType::Vocab) {
+                        entries.push(PathEntry {
+                            name: self.entry_name(path.clone()),
+                            size: 0,
+                            path: path.clone(),
+                            kind: kind.clone(),
+                        });
+                    }
                 }
             });
 
         Ok(entries)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const STYLES: &str = ".github/styles";
+
+    #[test]
+    fn index() {
+        let p = StylesPath::new(PathBuf::from(STYLES));
+
+        assert_eq!(p.count(EntryType::Style).unwrap(), 2);
+        assert_eq!(p.count(EntryType::Rule).unwrap(), 8);
+        assert_eq!(p.count(EntryType::Vocab).unwrap(), 1);
+
+        let style = p.get(EntryType::Style, "Test").unwrap();
+        assert_eq!(style.name, "Test");
+        assert_eq!(style.size, 1);
     }
 }
