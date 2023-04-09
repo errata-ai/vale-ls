@@ -3,6 +3,7 @@ use std::{env, str::FromStr};
 use ropey::Rope;
 use tower_lsp::lsp_types::*;
 
+use crate::pkg;
 use crate::styles;
 use crate::vale;
 
@@ -104,6 +105,21 @@ pub(crate) fn entry_to_completion(v: styles::PathEntry) -> CompletionItem {
             value: v.path.display().to_string(),
         })),
         detail: Some(v.kind.to_string()),
+        ..CompletionItem::default()
+    }
+}
+
+pub(crate) fn pkg_to_completion(pkg: pkg::Package) -> CompletionItem {
+    CompletionItem {
+        label: pkg.name.clone(),
+        insert_text: Some(pkg.name.clone()),
+        kind: Some(CompletionItemKind::VALUE),
+        label_details: Some(CompletionItemLabelDetails {
+            description: Some(pkg.description),
+            ..CompletionItemLabelDetails::default()
+        }),
+        detail: Some("Package".to_string()),
+        preselect: Some(true),
         ..CompletionItem::default()
     }
 }

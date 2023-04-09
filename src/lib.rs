@@ -13,6 +13,7 @@
 /// Protocol (LSP).
 pub mod error;
 pub mod ini;
+pub mod pkg;
 pub mod server;
 pub mod styles;
 pub mod utils;

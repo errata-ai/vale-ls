@@ -59,22 +59,26 @@ impl StylesPath {
         Ok(idx.iter().filter(|e| e.kind == kind).count())
     }
 
-    pub fn get(&self, kind: EntryType, name: &str) -> Result<PathEntry, Error> {
-        let idx = self.index()?;
-
-        let entry = idx
-            .iter()
-            .find(|e| e.kind == kind && e.name == name)
-            .ok_or(Error::Msg("Not found".to_string()))?;
-
-        Ok(entry.clone())
+    pub fn get_vocab(&self) -> Result<Vec<PathEntry>, Error> {
+        self.get(EntryType::Vocab)
     }
 
-    pub fn filter(&self, kind: EntryType) -> Result<Vec<PathEntry>, Error> {
-        let idx = self.index()?;
+    pub fn get_styles(&self) -> Result<Vec<PathEntry>, Error> {
+        let mut styles = vec![PathEntry {
+            name: "Vale".to_string(),
+            size: 4,
+            path: "".into(),
+            kind: EntryType::Style,
+        }];
+        styles.append(&mut self.get(EntryType::Style)?);
 
+        Ok(styles)
+    }
+
+    fn get(&self, kind: EntryType) -> Result<Vec<PathEntry>, Error> {
+        let idx = self.index()?;
         Ok(idx
-            .iter()
+            .into_iter()
             .filter(|e| e.kind == kind)
             .map(|e| e.clone())
             .collect())
@@ -174,7 +178,13 @@ mod tests {
         assert_eq!(p.count(EntryType::Rule).unwrap(), 8);
         assert_eq!(p.count(EntryType::Vocab).unwrap(), 1);
 
-        let style = p.get(EntryType::Style, "Test").unwrap();
+        let style = p
+            .get_styles()
+            .unwrap()
+            .into_iter()
+            .find(|s| s.name == "Test")
+            .unwrap();
+
         assert_eq!(style.name, "Test");
         assert_eq!(style.size, 1);
     }

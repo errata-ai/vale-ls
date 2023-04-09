@@ -1,24 +1,13 @@
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 
 use regex::Regex;
-use reqwest;
-use serde::Deserialize;
 use tower_lsp::lsp_types::*;
 
 use crate::error::Error;
-use crate::styles::{EntryType, StylesPath};
+use crate::pkg;
+use crate::styles::StylesPath;
 use crate::utils;
-
-const PKGS: &str = "https://raw.githubusercontent.com/errata-ai/packages/master/library.json";
-
-#[derive(Deserialize, Debug, Clone)]
-struct Package {
-    name: String,
-    description: String,
-    homepage: String,
-}
 
 pub fn key_to_info(key: &str) -> Option<String> {
     match key {
@@ -43,7 +32,7 @@ pub async fn complete(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>
     let re = Regex::new(r"\w+\.\w+ =").unwrap();
 
     if line.contains("BasedOnStyles") {
-        completions = get_styles(line, styles);
+        completions = get_styles(line, styles)?;
     } else if line.contains("MinAlertLevel") {
         vec![
             "suggestion".to_string(),
@@ -68,48 +57,42 @@ pub async fn complete(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>
     } else if line.contains("Vocab") {
         completions = get_vocab(line, styles)?;
     } else if line.contains("Packages") {
-        completions = get_pkgs(line).await;
+        completions = get_pkgs(line).await?;
     }
 
     Ok(completions)
 }
 
-async fn get_pkgs(line: &str) -> Vec<CompletionItem> {
-    let mut completions = Vec::new();
+async fn get_pkgs(line: &str) -> Result<Vec<CompletionItem>, Error> {
+    let pkgs: Vec<pkg::Package> = pkg::fetch().await?;
 
-    match reqwest::get(PKGS).await {
-        Ok(resp) => {
-            if resp.status().is_success() {
-                let info: Vec<Package> = resp.json().await.unwrap();
-                for pkg in info {
-                    if !line.contains(pkg.name.as_str()) {
-                        completions.push(CompletionItem {
-                            label: pkg.name.clone(),
-                            insert_text: Some(pkg.name.clone()),
-                            kind: Some(CompletionItemKind::VALUE),
-                            label_details: Some(CompletionItemLabelDetails {
-                                description: Some(pkg.description),
-                                ..CompletionItemLabelDetails::default()
-                            }),
-                            detail: Some("Package".to_string()),
-                            preselect: Some(true),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-            }
-        }
-        Err(_) => (),
-    }
+    let completions = pkgs
+        .into_iter()
+        .filter(|v| !line.contains(&v.name))
+        .map(|v| utils::pkg_to_completion(v))
+        .collect();
 
-    completions
+    Ok(completions)
 }
 
 fn get_vocab(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>, Error> {
     let p = StylesPath::new(styles);
 
     let completions = p
-        .filter(EntryType::Vocab)?
+        .get_vocab()?
+        .into_iter()
+        .filter(|v| !line.contains(&v.name))
+        .map(|v| utils::entry_to_completion(v))
+        .collect();
+
+    Ok(completions)
+}
+
+fn get_styles(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>, Error> {
+    let p = StylesPath::new(styles);
+
+    let completions = p
+        .get_styles()?
         .into_iter()
         .filter(|v| !line.contains(&v.name))
         .map(|v| utils::entry_to_completion(v))
@@ -181,54 +164,4 @@ fn block_tags() -> Vec<CompletionItem> {
         ..CompletionItem::default()
     })
     .collect()
-}
-
-fn get_styles(line: &str, styles: PathBuf) -> Vec<CompletionItem> {
-    match fs::read_dir(styles.as_path()) {
-        Ok(paths) => {
-            let mut found = vec![CompletionItem {
-                label: "Vale".to_string(),
-                insert_text: Some("Vale".to_string()),
-                kind: Some(CompletionItemKind::VALUE),
-                label_details: Some(CompletionItemLabelDetails {
-                    description: Some("4 rules".to_string()),
-                    ..CompletionItemLabelDetails::default()
-                }),
-                detail: Some("Style".to_string()),
-                ..CompletionItem::default()
-            }];
-
-            let dirs: Vec<PathBuf> = paths
-                .into_iter()
-                .filter(|r| r.is_ok())
-                .map(|r| r.unwrap().path())
-                .filter(|r| r.is_dir())
-                .collect();
-
-            for path in dirs {
-                let name = path.file_name().unwrap().to_string_lossy().to_string();
-                let size = fs::read_dir(path.clone()).unwrap().count();
-                if name != "Vocab" && name != ".vale-config" && !line.contains(&name) {
-                    found.push(CompletionItem {
-                        label: name.clone(),
-                        insert_text: Some(name.clone()),
-                        kind: Some(CompletionItemKind::VALUE),
-                        documentation: Some(Documentation::MarkupContent(MarkupContent {
-                            kind: MarkupKind::Markdown,
-                            value: path.display().to_string(),
-                        })),
-                        label_details: Some(CompletionItemLabelDetails {
-                            description: Some(format!("{} rules", size)),
-                            ..CompletionItemLabelDetails::default()
-                        }),
-                        detail: Some("Style".to_string()),
-                        ..CompletionItem::default()
-                    });
-                }
-            }
-
-            found
-        }
-        Err(_) => vec![],
-    }
 }
