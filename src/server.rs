@@ -217,8 +217,16 @@ impl LanguageServer for Backend {
 
         let styles = config.unwrap().styles_path;
         if ext == "ini" {
-            let computed = ini::complete(line, styles).await;
-            return Ok(Some(CompletionResponse::Array(computed)));
+            match ini::complete(line, styles).await {
+                Ok(computed) => {
+                    return Ok(Some(CompletionResponse::Array(computed)));
+                }
+                Err(err) => {
+                    self.client
+                        .log_message(MessageType::ERROR, format!("Error: {}", err))
+                        .await;
+                }
+            }
         }
 
         Ok(None)

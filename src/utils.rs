@@ -3,6 +3,7 @@ use std::{env, str::FromStr};
 use ropey::Rope;
 use tower_lsp::lsp_types::*;
 
+use crate::styles;
 use crate::vale;
 
 pub(crate) fn make_title(action: String, matched: String, fix: String) -> String {
@@ -90,6 +91,20 @@ pub(crate) fn severity_to_level(severity: String) -> DiagnosticSeverity {
         "warning" => DiagnosticSeverity::WARNING,
         "suggestion" => DiagnosticSeverity::INFORMATION,
         _ => DiagnosticSeverity::HINT,
+    }
+}
+
+pub(crate) fn entry_to_completion(v: styles::PathEntry) -> CompletionItem {
+    CompletionItem {
+        label: v.name.clone(),
+        insert_text: Some(v.name.clone()),
+        kind: Some(CompletionItemKind::VALUE),
+        documentation: Some(Documentation::MarkupContent(MarkupContent {
+            kind: MarkupKind::Markdown,
+            value: v.path.display().to_string(),
+        })),
+        detail: Some(v.kind.to_string()),
+        ..CompletionItem::default()
     }
 }
 

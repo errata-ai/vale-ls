@@ -7,6 +7,10 @@ use reqwest;
 use serde::Deserialize;
 use tower_lsp::lsp_types::*;
 
+use crate::error::Error;
+use crate::styles::{EntryType, StylesPath};
+use crate::utils;
+
 const PKGS: &str = "https://raw.githubusercontent.com/errata-ai/packages/master/library.json";
 
 #[derive(Deserialize, Debug, Clone)]
@@ -34,7 +38,7 @@ pub fn key_to_info(key: &str) -> Option<String> {
     }
 }
 
-pub async fn complete(line: &str, styles: PathBuf) -> Vec<CompletionItem> {
+pub async fn complete(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>, Error> {
     let mut completions = Vec::new();
     let re = Regex::new(r"\w+\.\w+ =").unwrap();
 
@@ -62,12 +66,12 @@ pub async fn complete(line: &str, styles: PathBuf) -> Vec<CompletionItem> {
     } else if re.is_match(line) {
         completions = rule_options();
     } else if line.contains("Vocab") {
-        completions = get_vocab(line, styles);
+        completions = get_vocab(line, styles)?;
     } else if line.contains("Packages") {
         completions = get_pkgs(line).await;
     }
 
-    completions
+    Ok(completions)
 }
 
 async fn get_pkgs(line: &str) -> Vec<CompletionItem> {
@@ -101,39 +105,17 @@ async fn get_pkgs(line: &str) -> Vec<CompletionItem> {
     completions
 }
 
-fn get_vocab(line: &str, styles: PathBuf) -> Vec<CompletionItem> {
-    match fs::read_dir(styles.join("Vocab").as_path()) {
-        Ok(paths) => {
-            let mut found = vec![];
+fn get_vocab(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>, Error> {
+    let p = StylesPath::new(styles);
 
-            let dirs: Vec<PathBuf> = paths
-                .into_iter()
-                .filter(|r| r.is_ok())
-                .map(|r| r.unwrap().path())
-                .filter(|r| r.is_dir())
-                .collect();
+    let completions = p
+        .filter(EntryType::Vocab)?
+        .into_iter()
+        .filter(|v| !line.contains(&v.name))
+        .map(|v| utils::entry_to_completion(v))
+        .collect();
 
-            for path in dirs {
-                let name = path.file_name().unwrap().to_string_lossy().to_string();
-                if !line.contains(&name) {
-                    found.push(CompletionItem {
-                        label: name.clone(),
-                        insert_text: Some(name.clone()),
-                        kind: Some(CompletionItemKind::VALUE),
-                        documentation: Some(Documentation::MarkupContent(MarkupContent {
-                            kind: MarkupKind::Markdown,
-                            value: path.display().to_string(),
-                        })),
-                        detail: Some("Vocab".to_string()),
-                        ..CompletionItem::default()
-                    });
-                }
-            }
-
-            found
-        }
-        Err(_) => vec![],
-    }
+    Ok(completions)
 }
 
 fn rule_options() -> Vec<CompletionItem> {

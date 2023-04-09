@@ -1,29 +1,40 @@
+use core::fmt;
 use std::{fs, path::PathBuf};
 
 use crate::error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
-enum EntryType {
+pub enum EntryType {
     Style,
     Vocab,
     Rule,
 }
 
 #[derive(Debug, Clone)]
-struct PathEntry {
-    name: String,
-    size: usize,
-    path: PathBuf,
-    kind: EntryType,
+pub struct PathEntry {
+    pub name: String,
+    pub size: usize,
+    pub path: PathBuf,
+    pub kind: EntryType,
 }
 
 #[derive(Debug)]
-struct StylesPath {
+pub struct StylesPath {
     root: PathBuf,
 }
 
+impl fmt::Display for EntryType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EntryType::Style => write!(f, "Style"),
+            EntryType::Vocab => write!(f, "Vocab"),
+            EntryType::Rule => write!(f, "Rule"),
+        }
+    }
+}
+
 impl StylesPath {
-    fn new(root: PathBuf) -> StylesPath {
+    pub fn new(root: PathBuf) -> StylesPath {
         StylesPath { root }
     }
 
@@ -41,6 +52,32 @@ impl StylesPath {
 
     pub fn add_to_reject(&self, name: &str, term: &str) -> Result<(), Error> {
         self.add_to_vocab(name, term, false)
+    }
+
+    pub fn count(&self, kind: EntryType) -> Result<usize, Error> {
+        let idx = self.index()?;
+        Ok(idx.iter().filter(|e| e.kind == kind).count())
+    }
+
+    pub fn get(&self, kind: EntryType, name: &str) -> Result<PathEntry, Error> {
+        let idx = self.index()?;
+
+        let entry = idx
+            .iter()
+            .find(|e| e.kind == kind && e.name == name)
+            .ok_or(Error::Msg("Not found".to_string()))?;
+
+        Ok(entry.clone())
+    }
+
+    pub fn filter(&self, kind: EntryType) -> Result<Vec<PathEntry>, Error> {
+        let idx = self.index()?;
+
+        Ok(idx
+            .iter()
+            .filter(|e| e.kind == kind)
+            .map(|e| e.clone())
+            .collect())
     }
 
     fn add_to_vocab(&self, name: &str, term: &str, accept: bool) -> Result<(), Error> {
@@ -62,22 +99,6 @@ impl StylesPath {
         fs::write(path, content)?;
 
         Ok(())
-    }
-
-    pub fn count(&self, kind: EntryType) -> Result<usize, Error> {
-        let idx = self.index()?;
-        Ok(idx.iter().filter(|e| e.kind == kind).count())
-    }
-
-    pub fn get(&self, kind: EntryType, name: &str) -> Result<PathEntry, Error> {
-        let idx = self.index()?;
-
-        let entry = idx
-            .iter()
-            .find(|e| e.kind == kind && e.name == name)
-            .ok_or(Error::Msg("Not found".to_string()))?;
-
-        Ok(entry.clone())
     }
 
     fn index(&self) -> Result<Vec<PathEntry>, Error> {
