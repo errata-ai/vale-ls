@@ -14,6 +14,7 @@ use tempfile::NamedTempFile;
 use which::which;
 
 use crate::error::Error;
+use crate::regex101;
 use crate::utils::vale_arch;
 
 const RELEASES: &str = "https://github.com/errata-ai/vale/releases/download";
@@ -25,22 +26,10 @@ pub(crate) struct ValeConfig {
     pub styles_path: PathBuf,
 }
 
-// 'Successfully compiled rule: "{\\"versionDeleteCode\\":\\"eeo3uUcApEhLXVpRSY07tE3D31x0EgEqSoXk\\",\\"regexDeleteCode\\":\\"BDrK1Fcev6fxXv8a7AcnZ7PT1vRcvAzcPpGy\\",\\"permalinkFragment\\":\\"FOxsqd\\",\\"version\\":1,\\"isLibraryEntry\\":false}"
-
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct CompiledRule {
     pub pattern: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct Regex101Session {
-    pub version_delete_code: String,
-    pub regex_delete_code: String,
-    pub permalink_fragment: String,
-    pub version: i32,
-    pub is_library_entry: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -245,24 +234,9 @@ impl ValeManager {
         config_path: String,
         cwd: String,
         rule: String,
-    ) -> Result<Regex101Session, Error> {
+    ) -> Result<regex101::Regex101Session, Error> {
         let rule = self.compile(config_path, cwd.clone(), rule)?;
-        let mut map = HashMap::new();
-
-        map.insert("regex", rule.pattern.as_str());
-        map.insert("flags", "gm");
-        map.insert("testString", "TEST");
-        map.insert("flavor", "pcre2");
-        map.insert("delimiter", "/");
-
-        let resp = reqwest::blocking::Client::new()
-            .post("https://regex101.com/api/regex")
-            .json(&map)
-            .send()?;
-
-        let body = resp.text()?;
-        let session: Regex101Session = serde_json::from_str(&body)?;
-
+        let session = regex101::upload(rule.pattern)?;
         Ok(session)
     }
 
@@ -380,7 +354,6 @@ mod tests {
 
     #[test]
     fn version() {
-        // https://github.com/errata-ai/vale/releases/download/v2.24.1/vale_2.24.1_macOS_arm64.tar.gz
         let mgr = ValeManager::new();
 
         let out = mgr.newer_version().unwrap();

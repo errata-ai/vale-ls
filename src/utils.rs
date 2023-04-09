@@ -23,6 +23,7 @@ pub(crate) fn vale_arch() -> String {
     let arch = match env::consts::ARCH {
         "x86_64" => "64-bit",
         "arm" => "arm64",
+        "aarch64" => "arm64",
         _ => "386",
     };
     format!("{}_{}", platform, arch)
@@ -144,4 +145,19 @@ pub(crate) fn alert_to_diagnostic(alert: &vale::ValeAlert) -> Diagnostic {
     }
 
     d
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn arch() {
+        let arch = vale_arch();
+        match env::consts::OS {
+            "windows" => assert_eq!(arch, "Windows_64-bit"),
+            "macos" => assert!(arch == "macOS_64-bit" || arch == "macOS_arm64"),
+            _ => assert_eq!(arch, "Linux_64-bit"),
+        }
+    }
 }
