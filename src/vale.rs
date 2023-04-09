@@ -25,6 +25,24 @@ pub(crate) struct ValeConfig {
     pub styles_path: PathBuf,
 }
 
+// 'Successfully compiled rule: "{\\"versionDeleteCode\\":\\"eeo3uUcApEhLXVpRSY07tE3D31x0EgEqSoXk\\",\\"regexDeleteCode\\":\\"BDrK1Fcev6fxXv8a7AcnZ7PT1vRcvAzcPpGy\\",\\"permalinkFragment\\":\\"FOxsqd\\",\\"version\\":1,\\"isLibraryEntry\\":false}"
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub(crate) struct CompiledRule {
+    pub pattern: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Regex101Session {
+    pub version_delete_code: String,
+    pub regex_delete_code: String,
+    pub permalink_fragment: String,
+    pub version: i32,
+    pub is_library_entry: bool,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct ValeError {
@@ -127,11 +145,11 @@ impl ValeManager {
 
     /// `install_or_update` checks if Vale is installed and, if so, checks if it's
     /// the latest version.
-    pub(crate) async fn install_or_update(&self) -> Result<String, Error> {
-        let newer = self.newer_version().await?;
+    pub(crate) fn install_or_update(&self) -> Result<String, Error> {
+        let newer = self.newer_version()?;
         if newer.is_some() {
             let v = newer.unwrap();
-            self.install(&self.managed_bin, &v, &self.arch).await?;
+            self.install(&self.managed_bin, &v, &self.arch)?;
             Ok(format!("Vale v{} installed.", v))
         } else {
             Ok("Vale is up to date.".to_string())
@@ -222,6 +240,59 @@ impl ValeManager {
         Ok(fix)
     }
 
+    pub(crate) fn upload_rule(
+        &self,
+        config_path: String,
+        cwd: String,
+        rule: String,
+    ) -> Result<Regex101Session, Error> {
+        let rule = self.compile(config_path, cwd.clone(), rule)?;
+        let mut map = HashMap::new();
+
+        map.insert("regex", rule.pattern.as_str());
+        map.insert("flags", "gm");
+        map.insert("testString", "TEST");
+        map.insert("flavor", "pcre2");
+        map.insert("delimiter", "/");
+
+        let resp = reqwest::blocking::Client::new()
+            .post("https://regex101.com/api/regex")
+            .json(&map)
+            .send()?;
+
+        let body = resp.text()?;
+        let session: Regex101Session = serde_json::from_str(&body)?;
+
+        Ok(session)
+    }
+
+    fn compile(
+        &self,
+        config_path: String,
+        cwd: String,
+        rule: String,
+    ) -> Result<CompiledRule, Error> {
+        let mut args = vec![];
+
+        if config_path != "" {
+            args.push(format!("--config={}", config_path));
+        }
+
+        args.push("compile".to_string());
+        args.push(rule);
+
+        let exe = self.exe_path(false)?;
+        let compiled = Command::new(exe.as_os_str())
+            .current_dir(cwd.clone())
+            .args(args)
+            .output()?;
+
+        let buf = String::from_utf8(compiled.stdout)?;
+        let rule: CompiledRule = serde_json::from_str(&buf)?;
+
+        Ok(rule)
+    }
+
     fn exe_path(&self, managed: bool) -> Result<PathBuf, Error> {
         if self.managed_exe.exists() {
             return Ok(self.managed_exe.clone());
@@ -231,8 +302,8 @@ impl ValeManager {
         Err(Error::from("Vale is not installed."))
     }
 
-    async fn newer_version(&self) -> Result<Option<String>, Error> {
-        let latest = self.fetch_version().await?;
+    fn newer_version(&self) -> Result<Option<String>, Error> {
+        let latest = self.fetch_version()?;
         match self.version(true) {
             Ok(current) => {
                 let v1 = Version::parse(&current)?;
@@ -262,11 +333,13 @@ impl ValeManager {
     }
 
     /// `fetch_version` returns the latest version of Vale.
-    async fn fetch_version(&self) -> Result<String, Error> {
-        let client = reqwest::Client::builder().user_agent("vale-ls").build()?;
+    fn fetch_version(&self) -> Result<String, Error> {
+        let client = reqwest::blocking::Client::builder()
+            .user_agent("vale-ls")
+            .build()?;
 
-        let resp = client.get(LATEST).send().await?;
-        let info: Release = resp.json().await?;
+        let resp = client.get(LATEST).send()?;
+        let info: Release = resp.json()?;
 
         let tag = info.tag_name.strip_prefix("v").unwrap().to_string();
         Ok(tag)
@@ -280,15 +353,15 @@ impl ValeManager {
     /// * `path` - A path to the directory where Vale should be installed.
     /// * `version` - A string representing the version to be installed.
     /// * `arch` - A string representing the architecture to be installed.
-    async fn install(&self, path: &Path, v: &str, arch: &str) -> Result<(), Error> {
+    fn install(&self, path: &Path, v: &str, arch: &str) -> Result<(), Error> {
         let mut asset = format!("/v{}/vale_{}_{}.tar.gz", v, v, arch);
         if arch.to_lowercase().contains("windows") {
             asset = format!("/v{}/vale_{}_{}.zip", v, v, arch);
         }
-        let url = RELEASES.to_owned() + &asset;
+        let url = format!("{}{}", RELEASES, asset);
 
-        let resp = reqwest::get(url).await?.bytes().await?;
-        let archive: Vec<u8> = resp.to_vec();
+        let resp = reqwest::blocking::get(url)?.bytes()?;
+        let archive = resp.to_vec();
 
         let buf = io::Cursor::new(archive);
         if asset.ends_with(".zip") {
@@ -298,5 +371,25 @@ impl ValeManager {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version() {
+        // https://github.com/errata-ai/vale/releases/download/v2.24.1/vale_2.24.1_macOS_arm64.tar.gz
+        let mgr = ValeManager::new();
+
+        let out = mgr.newer_version().unwrap();
+        assert!(out.is_some());
+
+        let v1 = Version::parse(&out.unwrap()).unwrap();
+        assert!(v1 >= Version::parse("2.0.0").unwrap());
+
+        let v2 = Version::parse(&mgr.fetch_version().unwrap()).unwrap();
+        assert!(v2 >= Version::parse("2.0.0").unwrap());
     }
 }

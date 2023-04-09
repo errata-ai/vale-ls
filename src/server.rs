@@ -61,7 +61,7 @@ impl LanguageServer for Backend {
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 execute_command_provider: Some(ExecuteCommandOptions {
-                    commands: vec!["cli.sync".to_string()],
+                    commands: vec!["cli.sync".to_string(), "cli.compile".to_string()],
                     work_done_progress_options: Default::default(),
                 }),
                 completion_provider: Some(CompletionOptions {
@@ -122,18 +122,8 @@ impl LanguageServer for Backend {
 
     async fn execute_command(&self, params: ExecuteCommandParams) -> Result<Option<Value>> {
         match params.command.as_str() {
-            "cli.sync" => match self.cli.sync(self.config_path(), self.root_path()) {
-                Ok(_) => {
-                    self.client
-                        .show_message(MessageType::INFO, "Successfully synced Vale config.")
-                        .await;
-                }
-                Err(e) => {
-                    self.client
-                        .show_message(MessageType::ERROR, format!("Failed to sync CLI: {}", e))
-                        .await;
-                }
-            },
+            "cli.sync" => self.do_sync(params.arguments).await,
+            "cli.compile" => self.do_compile(params.arguments).await,
             _ => {}
         };
         Ok(None)
@@ -335,7 +325,7 @@ impl Backend {
         self.parse_params(params);
 
         if self.should_install() {
-            match self.cli.install_or_update().await {
+            match self.cli.install_or_update() {
                 Ok(status) => {
                     self.client.log_message(MessageType::INFO, status).await;
                 }
@@ -430,5 +420,67 @@ impl Backend {
             return "yml".to_string();
         }
         "".to_string()
+    }
+
+    async fn do_sync(&self, _: Vec<Value>) {
+        match self.cli.sync(self.config_path(), self.root_path()) {
+            Ok(_) => {
+                self.client
+                    .show_message(MessageType::INFO, "Successfully synced Vale config.")
+                    .await;
+            }
+            Err(e) => {
+                self.client
+                    .show_message(MessageType::ERROR, format!("Failed to sync CLI: {}", e))
+                    .await;
+            }
+        }
+    }
+
+    async fn do_compile(&self, arguments: Vec<Value>) {
+        if arguments.len() == 0 {
+            self.client
+                .show_message(MessageType::ERROR, "No URI provided. Please try again.")
+                .await;
+            return;
+        }
+
+        let arg = arguments[0].as_str().unwrap().to_string();
+        let uri = Url::parse(&arg).unwrap().to_file_path().unwrap();
+
+        let resp = self.cli.upload_rule(
+            self.config_path(),
+            self.root_path(),
+            uri.to_str().unwrap().to_string(),
+        );
+
+        match resp {
+            Ok(r) => {
+                let session = format!("https://regex101.com/r/{}", r.permalink_fragment);
+                match open::that(session) {
+                    Ok(_) => {
+                        self.client
+                            .show_message(
+                                MessageType::INFO,
+                                "Successfully compiled rule. Opening Regex101.",
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        self.client
+                            .show_message(
+                                MessageType::ERROR,
+                                format!("Failed to open Regex101: {}", e),
+                            )
+                            .await;
+                    }
+                }
+            }
+            Err(e) => {
+                self.client
+                    .show_message(MessageType::ERROR, format!("Failed to compile rule: {}", e))
+                    .await;
+            }
+        }
     }
 }
