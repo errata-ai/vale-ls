@@ -70,18 +70,19 @@ impl Rule {
 
     /// Returns the documentation for a given token, if it exists.
     pub(crate) fn token_info(&self, token: &str) -> Option<Cow<'static, str>> {
+        let tok = token.trim_end_matches(':');
         match self.extends {
-            Extends::Existence => self.existence(token),
-            Extends::Substitution => self.substitution(token),
-            Extends::Occurrence => self.occurrence(token),
-            Extends::Repetition => self.repetition(token),
-            Extends::Consistency => self.consistency(token),
-            Extends::Conditional => self.conditional(token),
-            Extends::Capitalization => self.capitalization(token),
-            Extends::Metric => self.metric(token),
-            Extends::Spelling => self.spelling(token),
-            Extends::Sequence => self.sequence(token),
-            Extends::Script => self.script(token),
+            Extends::Existence => self.existence(tok),
+            Extends::Substitution => self.substitution(tok),
+            Extends::Occurrence => self.occurrence(tok),
+            Extends::Repetition => self.repetition(tok),
+            Extends::Consistency => self.consistency(tok),
+            Extends::Conditional => self.conditional(tok),
+            Extends::Capitalization => self.capitalization(tok),
+            Extends::Metric => self.metric(tok),
+            Extends::Spelling => self.spelling(tok),
+            Extends::Sequence => self.sequence(tok),
+            Extends::Script => self.script(tok),
             Extends::Invalid => None,
         }
     }

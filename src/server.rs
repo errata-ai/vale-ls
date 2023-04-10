@@ -165,8 +165,8 @@ impl LanguageServer for Backend {
                 }),
                 range: Some(range),
             }));
-        } else if ext == "yml" {
-            let rule = yml::Rule::new(uri.path());
+        } else if ext == "yml" && uri.to_file_path().is_ok() {
+            let rule = yml::Rule::new(uri.to_file_path().unwrap().to_str().unwrap());
             if rule.is_ok() {
                 let info = rule.unwrap();
                 let desc = info.token_info(&token);
