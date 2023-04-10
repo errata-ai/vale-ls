@@ -161,7 +161,7 @@ impl LanguageServer for Backend {
             return Ok(Some(Hover {
                 contents: HoverContents::Markup(MarkupContent {
                     kind: MarkupKind::Markdown,
-                    value: ini::key_to_info(&token).unwrap(),
+                    value: ini::key_to_info(&token).unwrap().to_string(),
                 }),
                 range: Some(range),
             }));

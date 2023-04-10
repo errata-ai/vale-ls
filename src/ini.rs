@@ -9,20 +9,20 @@ use crate::pkg;
 use crate::styles::StylesPath;
 use crate::utils;
 
-pub fn key_to_info(key: &str) -> Option<String> {
+pub fn key_to_info(key: &str) -> Option<&str> {
     match key {
-        "StylesPath" => Some(include_str!("../doc/ini/StylesPath.md").to_string()),
-        "MinAlertLevel" => Some(include_str!("../doc/ini/MinAlertLevel.md").to_string()),
-        "IgnoredScopes" => Some(include_str!("../doc/ini/IgnoredScopes.md").to_string()),
-        "IgnoredClasses" => Some(include_str!("../doc/ini/IgnoredClasses.md").to_string()),
-        "SkippedScopes" => Some(include_str!("../doc/ini/SkippedScopes.md").to_string()),
-        "WordTemplate" => Some(include_str!("../doc/ini/WordTemplate.md").to_string()),
-        "BasedOnStyles" => Some(include_str!("../doc/ini/BasedOnStyles.md").to_string()),
-        "BlockIgnores" => Some(include_str!("../doc/ini/BlockIgnores.md").to_string()),
-        "TokenIgnores" => Some(include_str!("../doc/ini/TokenIgnores.md").to_string()),
-        "Transform" => Some(include_str!("../doc/ini/Transform.md").to_string()),
-        "Vocab" => Some(include_str!("../doc/ini/Vocab.md").to_string()),
-        "Packages" => Some(include_str!("../doc/ini/Packages.md").to_string()),
+        "StylesPath" => Some(include_str!("../doc/ini/StylesPath.md")),
+        "MinAlertLevel" => Some(include_str!("../doc/ini/MinAlertLevel.md")),
+        "IgnoredScopes" => Some(include_str!("../doc/ini/IgnoredScopes.md")),
+        "IgnoredClasses" => Some(include_str!("../doc/ini/IgnoredClasses.md")),
+        "SkippedScopes" => Some(include_str!("../doc/ini/SkippedScopes.md")),
+        "WordTemplate" => Some(include_str!("../doc/ini/WordTemplate.md")),
+        "BasedOnStyles" => Some(include_str!("../doc/ini/BasedOnStyles.md")),
+        "BlockIgnores" => Some(include_str!("../doc/ini/BlockIgnores.md")),
+        "TokenIgnores" => Some(include_str!("../doc/ini/TokenIgnores.md")),
+        "Transform" => Some(include_str!("../doc/ini/Transform.md")),
+        "Vocab" => Some(include_str!("../doc/ini/Vocab.md")),
+        "Packages" => Some(include_str!("../doc/ini/Packages.md")),
         _ => None,
     }
 }
@@ -34,20 +34,15 @@ pub async fn complete(line: &str, styles: PathBuf) -> Result<Vec<CompletionItem>
     if line.contains("BasedOnStyles") {
         completions = get_styles(line, styles)?;
     } else if line.contains("MinAlertLevel") {
-        vec![
-            "suggestion".to_string(),
-            "warning".to_string(),
-            "error".to_string(),
-        ]
-        .into_iter()
-        .for_each(|s| {
-            completions.push(CompletionItem {
-                label: s.clone(),
-                insert_text: Some(s),
-                kind: Some(CompletionItemKind::VALUE),
-                ..CompletionItem::default()
-            })
-        });
+        vec!["suggestion", "warning", "error"]
+            .into_iter()
+            .for_each(|s| {
+                completions.push(CompletionItem {
+                    label: s.to_string(),
+                    kind: Some(CompletionItemKind::VALUE),
+                    ..CompletionItem::default()
+                })
+            });
     } else if line.contains("IgnoredScopes") {
         completions = inline_tags();
     } else if line.contains("SkippedScopes") {
@@ -115,7 +110,6 @@ fn rule_options() -> Vec<CompletionItem> {
     for (key, value) in options {
         completions.push(CompletionItem {
             label: key.to_string(),
-            insert_text: Some(key.to_string()),
             kind: Some(CompletionItemKind::VALUE),
             label_details: Some(CompletionItemLabelDetails {
                 description: Some(format!("{}", value)),
@@ -129,39 +123,23 @@ fn rule_options() -> Vec<CompletionItem> {
 }
 
 fn inline_tags() -> Vec<CompletionItem> {
-    vec![
-        "small".to_string(),
-        "abbr".to_string(),
-        "em".to_string(),
-        "kbd".to_string(),
-        "tt".to_string(),
-        "code".to_string(),
-        "b".to_string(),
-        "i".to_string(),
-    ]
-    .into_iter()
-    .map(|s| CompletionItem {
-        label: s.clone(),
-        insert_text: Some(s),
-        kind: Some(CompletionItemKind::VALUE),
-        ..CompletionItem::default()
-    })
-    .collect()
+    vec!["small", "abbr", "em", "kbd", "tt", "code", "b", "i"]
+        .into_iter()
+        .map(|s| CompletionItem {
+            label: s.to_string(),
+            kind: Some(CompletionItemKind::VALUE),
+            ..CompletionItem::default()
+        })
+        .collect()
 }
 
 fn block_tags() -> Vec<CompletionItem> {
-    vec![
-        "script".to_string(),
-        "style".to_string(),
-        "pre".to_string(),
-        "figure".to_string(),
-    ]
-    .into_iter()
-    .map(|s| CompletionItem {
-        label: s.clone(),
-        insert_text: Some(s),
-        kind: Some(CompletionItemKind::VALUE),
-        ..CompletionItem::default()
-    })
-    .collect()
+    vec!["script", "style", "pre", "figure"]
+        .into_iter()
+        .map(|s| CompletionItem {
+            label: s.to_string(),
+            kind: Some(CompletionItemKind::VALUE),
+            ..CompletionItem::default()
+        })
+        .collect()
 }
