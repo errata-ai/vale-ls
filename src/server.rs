@@ -61,7 +61,7 @@ impl LanguageServer for Backend {
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 execute_command_provider: Some(ExecuteCommandOptions {
-                    commands: vec!["cli.sync".to_string()],
+                    commands: vec!["cli.sync".to_string(), "cli.compile".to_string()],
                     work_done_progress_options: Default::default(),
                 }),
                 completion_provider: Some(CompletionOptions {
@@ -81,7 +81,14 @@ impl LanguageServer for Backend {
                     },
                 )),
                 code_lens_provider: Some(CodeLensOptions {
-                    resolve_provider: Some(false),
+                    resolve_provider: Some(true),
+                }),
+                workspace: Some(WorkspaceServerCapabilities {
+                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                        supported: Some(true),
+                        change_notifications: Some(OneOf::Left(true)),
+                    }),
+                    file_operations: None,
                 }),
                 ..ServerCapabilities::default()
             },
@@ -226,7 +233,34 @@ impl LanguageServer for Backend {
     }
 
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
-        let _ = params;
+        let uri = params.text_document.uri;
+        let path = uri.to_file_path().unwrap();
+
+        let rule = yml::Rule::new(path.to_str().unwrap());
+        if rule.is_ok() && rule.unwrap().can_compile() {
+            let lens = vec![CodeLens {
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                },
+                command: Some(Command {
+                    title: "Compile Rule".to_string(),
+                    command: "cli.compile".to_string(),
+                    arguments: Some(vec![Value::String(uri.to_string())]),
+                    ..Command::default()
+                }),
+                data: Some(Value::String("".to_string())),
+            }];
+
+            return Ok(lens.into());
+        }
+
         Ok(None)
     }
 

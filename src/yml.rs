@@ -49,6 +49,23 @@ impl Rule {
         }
     }
 
+    pub(crate) fn can_compile(&self) -> bool {
+        match self.extends {
+            Extends::Existence => true,
+            Extends::Substitution => true,
+            Extends::Occurrence => true,
+            Extends::Repetition => true,
+            Extends::Consistency => true,
+            Extends::Conditional => true,
+            Extends::Capitalization => true,
+            Extends::Metric => false,
+            Extends::Spelling => false,
+            Extends::Sequence => false,
+            Extends::Script => false,
+            Extends::Invalid => false,
+        }
+    }
+
     /// Returns the documentation for a given token, if it exists.
     pub(crate) fn token_info(&self, token: &str) -> Option<String> {
         match self.extends {
