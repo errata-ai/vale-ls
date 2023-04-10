@@ -168,12 +168,13 @@ impl LanguageServer for Backend {
         } else if ext == "yml" {
             let rule = yml::Rule::new(uri.path());
             if rule.is_ok() {
-                let info = rule.unwrap().token_info(&token);
-                if info.is_some() {
+                let info = rule.unwrap();
+                let desc = info.token_info(&token);
+                if desc.is_some() {
                     return Ok(Some(Hover {
                         contents: HoverContents::Markup(MarkupContent {
                             kind: MarkupKind::Markdown,
-                            value: info.unwrap(),
+                            value: desc.unwrap().to_string(),
                         }),
                         range: Some(range),
                     }));
