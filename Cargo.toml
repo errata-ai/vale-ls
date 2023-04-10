@@ -26,7 +26,6 @@ yaml-rust = "0.4.5"
 zip-extract = "0.1.2"
 regex = "1.7.3"
 open = "4.0.1"
-openssl = { version = "0.10", features = ["vendored"] }
 
-[features]
-vendored-openssl = ["openssl/vendored"]
+[target.'cfg(unix)'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
