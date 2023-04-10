@@ -61,7 +61,7 @@ impl LanguageServer for Backend {
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 execute_command_provider: Some(ExecuteCommandOptions {
-                    commands: vec!["cli.sync".to_string(), "cli.compile".to_string()],
+                    commands: vec!["cli.sync".to_string()],
                     work_done_progress_options: Default::default(),
                 }),
                 completion_provider: Some(CompletionOptions {
@@ -80,6 +80,9 @@ impl LanguageServer for Backend {
                         resolve_provider: None,
                     },
                 )),
+                code_lens_provider: Some(CodeLensOptions {
+                    resolve_provider: Some(false),
+                }),
                 ..ServerCapabilities::default()
             },
         })
@@ -219,6 +222,11 @@ impl LanguageServer for Backend {
             }
         }
 
+        Ok(None)
+    }
+
+    async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
+        let _ = params;
         Ok(None)
     }
 
