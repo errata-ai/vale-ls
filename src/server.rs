@@ -448,6 +448,17 @@ impl Backend {
         let arg = arguments[0].as_str().unwrap().to_string();
         let uri = Url::parse(&arg).unwrap().to_file_path().unwrap();
 
+        let ext = uri.extension().unwrap().to_str().unwrap();
+        if ext != "yml" {
+            self.client
+                .show_message(
+                    MessageType::ERROR,
+                    "Only YAML files are supported; skipping compilation.",
+                )
+                .await;
+            return;
+        }
+
         let resp = self.cli.upload_rule(
             self.config_path(),
             self.root_path(),
