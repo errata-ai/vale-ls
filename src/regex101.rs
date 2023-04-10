@@ -7,12 +7,13 @@ use crate::error::Error;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub(crate) struct Regex101Session {
-    // pub version_delete_code: String,
-    // pub regex_delete_code: String,
+    pub version_delete_code: String,
+    pub regex_delete_code: String,
     pub permalink_fragment: String,
-    // pub version: i32,
-    // pub is_library_entry: bool,
+    pub version: i32,
+    pub is_library_entry: bool,
 }
 
 pub(crate) fn upload(pattern: String) -> Result<Regex101Session, Error> {
