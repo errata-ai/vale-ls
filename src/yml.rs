@@ -28,6 +28,11 @@ impl Rule {
         let src = std::fs::read_to_string(rule_path)?;
         match YamlLoader::load_from_str(&src) {
             Ok(docs) => {
+                if docs.len() < 1 {
+                    return Ok(Rule {
+                        extends: Extends::Invalid,
+                    });
+                }
                 let doc = &docs[0];
                 let extends = match doc["extends"].as_str().unwrap_or("invalid") {
                     "existence" => Extends::Existence,
