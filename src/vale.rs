@@ -103,7 +103,15 @@ pub struct ValeManager {
     pub fallback_exe: PathBuf,
 }
 
+// ValeManager manages the installation and execution of Vale.
+//
+// ValeManager is responsible for downloading and installing Vale, as well as
+// running Vale and parsing its output.
 impl ValeManager {
+    // `new` creates a new ValeManager.
+    //
+    // The ValeManager will attempt to use the managed version of Vale, but
+    // will fall back to the system version if it's not available.
     pub fn new() -> ValeManager {
         let arch = vale_arch();
 
@@ -145,6 +153,9 @@ impl ValeManager {
         }
     }
 
+    /// `run` executes Vale with the given arguments.
+    ///
+    /// If `filter` is not empty, it will be passed to Vale as `--filter`.
     pub(crate) fn run(
         &self,
         fp: &str,

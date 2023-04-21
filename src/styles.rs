@@ -33,6 +33,7 @@ impl fmt::Display for EntryType {
     }
 }
 
+/// `StylesPath` provides an interface for managing a directory of styles.
 impl StylesPath {
     pub fn new(root: PathBuf) -> StylesPath {
         StylesPath { root }
