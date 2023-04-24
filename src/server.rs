@@ -59,6 +59,10 @@ impl LanguageServer for Backend {
                         will_save_wait_until: None,
                     },
                 )),
+                document_link_provider: Some(DocumentLinkOptions {
+                    resolve_provider: Some(false),
+                    work_done_progress_options: Default::default(),
+                }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 execute_command_provider: Some(ExecuteCommandOptions {
                     commands: vec!["cli.sync".to_string(), "cli.compile".to_string()],
@@ -136,6 +140,47 @@ impl LanguageServer for Backend {
             "cli.compile" => self.do_compile(params.arguments).await,
             _ => {}
         };
+        Ok(None)
+    }
+
+    async fn document_link(&self, params: DocumentLinkParams) -> Result<Option<Vec<DocumentLink>>> {
+        let uri = params.text_document.uri;
+        let ext = self.get_ext(uri.clone());
+
+        let text = self.document_map.get(uri.as_str());
+
+        if ext == "yml" && text.is_some() {
+            let rule = yml::Rule::new(uri.to_file_path().unwrap().to_str().unwrap());
+            if rule.is_ok() {
+                let link = rule.unwrap().source();
+                let text = text.unwrap();
+
+                let mut links = Vec::new();
+                for (i, line) in text.lines().enumerate() {
+                    let candidate = line.as_str();
+                    if candidate.is_none() {
+                        continue;
+                    }
+                    let lt = candidate.unwrap();
+                    let sp = lt.find(link.as_str());
+                    if sp.is_some() {
+                        let start = Position::new(i as u32, sp.unwrap() as u32);
+                        let end = Position::new(i as u32, link.len() as u32 + sp.unwrap() as u32);
+                        links.push(DocumentLink {
+                            range: Range::new(start, end),
+                            target: Some(Url::parse(link.as_str()).unwrap()),
+                            tooltip: None,
+                            data: None,
+                        });
+
+                        break;
+                    }
+                }
+
+                return Ok(Some(links));
+            }
+        }
+
         Ok(None)
     }
 

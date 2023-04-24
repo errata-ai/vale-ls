@@ -22,6 +22,7 @@ pub enum Extends {
 
 pub struct Rule {
     pub extends: Extends,
+    pub source: String,
 }
 
 fn vec_to_completions(vec: Vec<&str>) -> Vec<CompletionItem> {
@@ -42,9 +43,10 @@ impl Rule {
                 if docs.len() < 1 {
                     return Ok(Rule {
                         extends: Extends::Invalid,
+                        source: "".to_string(),
                     });
                 }
-                let doc = &docs[0];
+                let doc = docs[0].clone();
                 let extends = match doc["extends"].as_str().unwrap_or("invalid") {
                     "existence" => Extends::Existence,
                     "substitution" => Extends::Substitution,
@@ -59,12 +61,20 @@ impl Rule {
                     "script" => Extends::Script,
                     _ => Extends::Invalid,
                 };
-                Ok(Rule { extends })
+                Ok(Rule {
+                    extends,
+                    source: doc["link"].as_str().unwrap_or("").to_string(),
+                })
             }
             Err(_) => Ok(Rule {
                 extends: Extends::Invalid,
+                source: "".to_string(),
             }),
         }
+    }
+
+    pub(crate) fn source(&self) -> String {
+        self.source.clone()
     }
 
     pub(crate) fn complete(&self, line: &str) -> Result<Vec<CompletionItem>, Error> {
