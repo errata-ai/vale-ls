@@ -217,8 +217,8 @@ impl LanguageServer for Backend {
         }
 
         let styles = config.unwrap().styles_path;
-        if ext == "ini" {
-            match ini::complete(line, styles).await {
+        match ext.as_str() {
+            "ini" => match ini::complete(line, styles).await {
                 Ok(computed) => {
                     return Ok(Some(CompletionResponse::Array(computed)));
                 }
@@ -227,7 +227,23 @@ impl LanguageServer for Backend {
                         .log_message(MessageType::ERROR, format!("Error: {}", err))
                         .await;
                 }
+            },
+            "yml" => {
+                let rule = yml::Rule::new(uri.to_file_path().unwrap().to_str().unwrap());
+                if rule.is_ok() {
+                    match rule.unwrap().complete(line) {
+                        Ok(computed) => {
+                            return Ok(Some(CompletionResponse::Array(computed)));
+                        }
+                        Err(err) => {
+                            self.client
+                                .log_message(MessageType::ERROR, format!("Error: {}", err))
+                                .await;
+                        }
+                    }
+                }
             }
+            _ => {}
         }
 
         Ok(None)

@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use tower_lsp::lsp_types::*;
 use yaml_rust::YamlLoader;
 
 use crate::error::Error;
@@ -21,6 +22,16 @@ pub enum Extends {
 
 pub struct Rule {
     pub extends: Extends,
+}
+
+fn vec_to_completions(vec: Vec<&str>) -> Vec<CompletionItem> {
+    vec.into_iter()
+        .map(|s| CompletionItem {
+            label: s.to_string(),
+            kind: Some(CompletionItemKind::VALUE),
+            ..CompletionItem::default()
+        })
+        .collect()
 }
 
 impl Rule {
@@ -54,6 +65,30 @@ impl Rule {
                 extends: Extends::Invalid,
             }),
         }
+    }
+
+    pub(crate) fn complete(&self, line: &str) -> Result<Vec<CompletionItem>, Error> {
+        let mut completions = Vec::new();
+
+        if line.contains("extends:") {
+            completions = vec_to_completions(vec![
+                "existence",
+                "substitution",
+                "occurrence",
+                "repetition",
+                "consistency",
+                "conditional",
+                "capitalization",
+                "metric",
+                "spelling",
+                "sequence",
+                "script",
+            ]);
+        } else if line.contains("level:") {
+            completions = vec_to_completions(vec!["suggestion", "warning", "error"]);
+        }
+
+        Ok(completions)
     }
 
     pub(crate) fn can_compile(&self) -> bool {
