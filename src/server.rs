@@ -156,6 +156,14 @@ impl LanguageServer for Backend {
                 let link = rule.unwrap().source();
                 let text = text.unwrap();
 
+                let target = Url::parse(link.as_str());
+                if target.is_err() {
+                    self.client
+                        .show_message(MessageType::ERROR, "link has Invalid URL")
+                        .await;
+                    return Ok(None);
+                }
+
                 let mut links = Vec::new();
                 for (i, line) in text.lines().enumerate() {
                     let candidate = line.as_str();
@@ -169,7 +177,7 @@ impl LanguageServer for Backend {
                         let end = Position::new(i as u32, link.len() as u32 + sp.unwrap() as u32);
                         links.push(DocumentLink {
                             range: Range::new(start, end),
-                            target: Some(Url::parse(link.as_str()).unwrap()),
+                            target: Some(target.unwrap()),
                             tooltip: None,
                             data: None,
                         });
