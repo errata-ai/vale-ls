@@ -76,6 +76,11 @@ impl StylesPath {
         Ok(styles)
     }
 
+    pub fn has(&self, path: &str) -> Result<bool, Error> {
+        let idx = self.index()?;
+        Ok(idx.iter().any(|e| e.path.to_string_lossy() == path))
+    }
+
     fn get(&self, kind: EntryType) -> Result<Vec<PathEntry>, Error> {
         let idx = self.index()?;
         Ok(idx

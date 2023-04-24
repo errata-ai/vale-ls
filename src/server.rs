@@ -6,6 +6,7 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
 use crate::ini;
+use crate::styles;
 use crate::utils;
 use crate::vale;
 use crate::yml;
@@ -492,8 +493,14 @@ impl Backend {
         if uri.path().contains(".vale.ini") {
             return "ini".to_string();
         } else if ext == "yml" {
-            // TODO: ensure path is on `StylesPath`.
-            return "yml".to_string();
+            let config = self.cli.config(self.config_path(), self.root_path());
+            if config.is_ok() {
+                let styles = config.unwrap().styles_path;
+                let p = styles::StylesPath::new(styles);
+                if p.has(uri.path()).unwrap_or(false) {
+                    return "yml".to_string();
+                }
+            }
         }
         "".to_string()
     }
