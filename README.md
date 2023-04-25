@@ -7,14 +7,9 @@ It provides high-level interface for managing Vale and its assets
 (binary, `StylesPath`, etc.) with the goal of making it easy to add IDE-like 
 features to any text editor that supports the Language Server Protocol.
 
-## Installation
+See the [documentation][4] for more information.
 
-Download the latest release from the [releases page][3] and follow the 
-instructions for your editor.
-
-### Sublime Text
-
-## Intellisense
+## Features
 
 <table>
     <tr>
@@ -68,3 +63,4 @@ instructions for your editor.
 [1]: https://microsoft.github.io/language-server-protocol/
 [2]: https://github.com/errata-ai/vale
 [3]: https://github.com/errata-ai/vale-ls/releases
+[4]: https://vale.sh/docs/integrations/guide/
