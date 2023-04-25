@@ -9,22 +9,27 @@ features to any text editor that supports the Language Server Protocol.
 
 ## Installation
 
+Download the latest release from the [releases page][3] and follow the 
+instructions for your editor.
+
+### Sublime Text
+
 ## Intellisense
 
 <table>
     <tr>
-        <th>Hover</th>
-        <th>Autocomplete</th>
+        <th>HoverProvider</th>
+        <th>CompletionProvider</th>
     </tr>
     <tr>
         <td width="50%">
-            <a href="https://user-images.githubusercontent.com/8785025/229923172-36fde7c3-da7b-45ec-a6f4-0465be99ca14.png">
-                <img src="https://user-images.githubusercontent.com/8785025/229923172-36fde7c3-da7b-45ec-a6f4-0465be99ca14.png" width="100%">
+            <a href="https://user-images.githubusercontent.com/8785025/234143355-c442cbbd-ffc8-445f-a9b8-c3756ac1a5c2.png">
+                <img src="https://user-images.githubusercontent.com/8785025/234143355-c442cbbd-ffc8-445f-a9b8-c3756ac1a5c2.png" width="100%">
             </a>
         </td>
         <td width="50%">
-            <a href="https://user-images.githubusercontent.com/8785025/229919933-f500ef73-1a13-4dbd-8d01-95be12f46e6f.png">
-                <img src="https://user-images.githubusercontent.com/8785025/229919933-f500ef73-1a13-4dbd-8d01-95be12f46e6f.png" width="100%">
+            <a href="https://user-images.githubusercontent.com/8785025/234143446-5dcb1f37-7af0-4834-84ca-37bb1db68f1e.png">
+                <img src="https://user-images.githubusercontent.com/8785025/234143446-5dcb1f37-7af0-4834-84ca-37bb1db68f1e.png" width="100%">
             </a>
         </td>
     </tr>
@@ -34,23 +39,32 @@ features to any text editor that supports the Language Server Protocol.
         </td>
         <td width="50%">Autocomplete all <code>StylesPath</code> assets: Styles, Packages, Vocabularies, etc.</td>
     </tr>
+    <tr>
+        <th>DocumentLinkProvider</th>
+        <th>CodeActionProvider</th>
+    </tr>
+    <tr>
+        <td width="50%">
+            <a href="https://user-images.githubusercontent.com/8785025/234143624-a6125229-fc74-4051-a40a-92ede8861ab9.png">
+                <img src="https://user-images.githubusercontent.com/8785025/234143624-a6125229-fc74-4051-a40a-92ede8861ab9.png" width="100%">
+            </a>
+        </td>
+        <td width="50%">
+            <a href="https://user-images.githubusercontent.com/8785025/234143654-d23a42a4-15d3-48cd-95cf-901d9b424b6b.png">
+                <img src="https://user-images.githubusercontent.com/8785025/234143654-d23a42a4-15d3-48cd-95cf-901d9b424b6b.png" width="100%">
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td width="50%">
+          Quickly navigate to external URLs.
+        </td>
+        <td width="50%">
+            Fix alerts with a single click.
+        </td>
+    </tr>
 </table>
-
-## Asset Management
-
-### Binary
-
-- [x] Install Vale
-- [x] Update Vale
-
-### Vocabularies
-
-- [ ] Create
-- [ ] Update
-
-### Rules
-
-- [ ] Compile
 
 [1]: https://microsoft.github.io/language-server-protocol/
 [2]: https://github.com/errata-ai/vale
+[3]: https://github.com/errata-ai/vale-ls/releases
