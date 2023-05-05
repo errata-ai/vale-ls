@@ -442,19 +442,19 @@ impl Backend {
     }
 
     fn should_install(&self) -> bool {
-        self.get_setting("vale-ls.installVale") == Some(Value::Bool(true))
+        self.get_setting("installVale") == Some(Value::Bool(true))
     }
 
     fn config_path(&self) -> String {
-        self.get_string("vale-ls.configPath")
+        self.get_string("configPath")
     }
 
     fn config_filter(&self) -> String {
-        self.get_string("vale-ls.filter")
+        self.get_string("filter")
     }
 
     fn should_sync(&self) -> bool {
-        self.get_setting("vale-ls.syncOnStartup") == Some(Value::Bool(true))
+        self.get_setting("syncOnStartup") == Some(Value::Bool(true))
     }
 
     fn root_path(&self) -> String {
