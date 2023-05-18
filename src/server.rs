@@ -101,12 +101,9 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        // FIXME: this causes the server to crash ONLY when used through
-        // Sublime Text's LSP framework.
-        //
-        // if self.should_sync() {
-        //    self.do_sync().await;
-        // }
+        if self.should_sync() {
+            self.do_sync().await;
+        }
         self.client
             .log_message(MessageType::INFO, "initialized!")
             .await;

@@ -203,7 +203,8 @@ impl ValeManager {
         let _ = Command::new(exe.as_os_str())
             .current_dir(cwd.clone())
             .args(args)
-            .status()?;
+            // NOTE: Calling `status` causes the server to crash?
+            .output()?;
 
         Ok(())
     }
