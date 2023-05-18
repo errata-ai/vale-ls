@@ -101,6 +101,9 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
+        if self.should_sync() {
+            self.do_sync().await;
+        }
         self.client
             .log_message(MessageType::INFO, "initialized!")
             .await;
@@ -408,7 +411,6 @@ impl Backend {
 
     async fn init(&self, params: Option<Value>, cwd: String) {
         self.parse_params(params);
-
         if self.should_install() {
             match self.cli.install_or_update() {
                 Ok(status) => {
@@ -423,10 +425,6 @@ impl Backend {
                         .await;
                 }
             }
-        }
-
-        if self.should_sync() {
-            self.do_sync().await;
         }
     }
 
