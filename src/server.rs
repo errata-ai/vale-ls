@@ -137,7 +137,7 @@ impl LanguageServer for Backend {
 
     async fn execute_command(&self, params: ExecuteCommandParams) -> Result<Option<Value>> {
         match params.command.as_str() {
-            "cli.sync" => self.do_sync(params.arguments).await,
+            "cli.sync" => self.do_sync().await,
             "cli.compile" => self.do_compile(params.arguments).await,
             _ => {}
         };
@@ -425,19 +425,8 @@ impl Backend {
             }
         }
 
-        if self.should_sync() && cwd != "" {
-            match self.cli.sync(self.config_path(), cwd) {
-                Ok(_) => {
-                    self.client
-                        .log_message(MessageType::INFO, "Successfully synced Vale config.")
-                        .await;
-                }
-                Err(err) => {
-                    self.client
-                        .log_message(MessageType::ERROR, err.to_string())
-                        .await;
-                }
-            }
+        if self.should_sync() {
+            self.do_sync().await;
         }
     }
 
@@ -513,7 +502,7 @@ impl Backend {
         "".to_string()
     }
 
-    async fn do_sync(&self, _: Vec<Value>) {
+    async fn do_sync(&self) {
         match self.cli.sync(self.config_path(), self.root_path()) {
             Ok(_) => {
                 self.client
