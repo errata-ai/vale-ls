@@ -139,9 +139,12 @@ pub(crate) fn alert_to_diagnostic(alert: &vale::ValeAlert) -> Diagnostic {
     };
 
     if alert.link != "" {
-        d.code_description = Some(CodeDescription {
-            href: Some(Url::from_str(&alert.link).unwrap()).unwrap(),
-        });
+        let uri = Url::from_str(&alert.link);
+        if uri.is_ok() {
+            d.code_description = Some(CodeDescription {
+                href: Some(uri.unwrap()).unwrap(),
+            });
+        }
     }
 
     d
