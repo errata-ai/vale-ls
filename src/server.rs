@@ -380,7 +380,7 @@ impl Backend {
 
         self.update(params.clone());
         if self.cli.is_installed() {
-            match self.cli.run(uri.path(), self.config_filter()) {
+            match self.cli.run(uri.path(), self.config_path(), self.config_filter()) {
                 Ok(result) => {
                     let mut diagnostics = Vec::new();
                     for (_, v) in result.iter() {

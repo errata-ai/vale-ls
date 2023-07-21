@@ -159,11 +159,15 @@ impl ValeManager {
     pub(crate) fn run(
         &self,
         fp: &str,
+        config_path: String,
         filter: String,
     ) -> Result<HashMap<String, Vec<ValeAlert>>, Error> {
         let mut args = self.args.clone();
         let cwd = path::Path::new(fp).parent().unwrap();
 
+        if config_path != "" {
+            args.push(format!("--config={}", config_path));
+        }
         if filter != "" {
             args.push(format!("--filter={}", filter));
         }
