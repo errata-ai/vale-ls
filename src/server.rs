@@ -377,10 +377,16 @@ impl LanguageServer for Backend {
 impl Backend {
     async fn on_change(&self, params: TextDocumentItem) {
         let uri = params.uri.clone();
+        let fp = uri.to_file_path();
+
+        let has_cli = self.cli.is_installed();
 
         self.update(params.clone());
-        if self.cli.is_installed() {
-            match self.cli.run(uri.path(), self.config_path(), self.config_filter()) {
+        if has_cli && fp.is_ok() {
+            match self
+                .cli
+                .run(fp.unwrap(), self.config_path(), self.config_filter())
+            {
                 Ok(result) => {
                     let mut diagnostics = Vec::new();
                     for (_, v) in result.iter() {
@@ -406,6 +412,17 @@ impl Backend {
                     };
                 }
             }
+        } else if !has_cli {
+            self.client
+                .log_message(MessageType::WARNING, "Vale CLI not installed!")
+                .await;
+        } else {
+            self.client
+                .log_message(
+                    MessageType::ERROR,
+                    format!("File path error: {:?}", fp.err()),
+                )
+                .await;
         }
     }
 

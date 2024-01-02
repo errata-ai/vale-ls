@@ -158,12 +158,12 @@ impl ValeManager {
     /// If `filter` is not empty, it will be passed to Vale as `--filter`.
     pub(crate) fn run(
         &self,
-        fp: &str,
+        fp: PathBuf,
         config_path: String,
         filter: String,
     ) -> Result<HashMap<String, Vec<ValeAlert>>, Error> {
         let mut args = self.args.clone();
-        let cwd = path::Path::new(fp).parent().unwrap();
+        let cwd = fp.parent().unwrap();
 
         if config_path != "" {
             args.push(format!("--config={}", config_path));
@@ -171,7 +171,7 @@ impl ValeManager {
         if filter != "" {
             args.push(format!("--filter={}", filter));
         }
-        args.push(fp.to_string());
+        args.push(fp.as_path().display().to_string());
 
         let exe = self.exe_path(false)?;
         let out = Command::new(exe.as_os_str())
