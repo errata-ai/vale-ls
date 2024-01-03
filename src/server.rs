@@ -418,10 +418,7 @@ impl Backend {
                 .await;
         } else {
             self.client
-                .log_message(
-                    MessageType::ERROR,
-                    format!("File path error: {:?}", fp.err()),
-                )
+                .log_message(MessageType::INFO, "No file path found. Is the file saved?")
                 .await;
         }
     }
