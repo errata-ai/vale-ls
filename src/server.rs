@@ -31,14 +31,10 @@ impl LanguageServer for Backend {
         // TODO: Workspace folders / settings
         let mut cwd = "".to_string();
         if params.root_uri.is_some() {
-            cwd = params
-                .root_uri
-                .unwrap()
-                .to_file_path()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
+            let path = params.root_uri.unwrap().to_file_path();
+            if path.is_ok() {
+                cwd = path.unwrap().to_str().unwrap().to_string();
+            }
         }
 
         self.param_map
@@ -315,9 +311,15 @@ impl LanguageServer for Backend {
             return Ok(None);
         }
 
-        let d = params.context.diagnostics[0].data.as_ref().unwrap();
-        let s = serde_json::to_string(d).unwrap();
+        let diagnostics = params.context.diagnostics[0].data.as_ref();
+        if diagnostics.is_none() {
+            // TODO: What case is this?
+            //
+            // See https://github.com/ChrisChinchilla/vale-vscode/issues/48
+            return Ok(None);
+        }
 
+        let s = serde_json::to_string(diagnostics.unwrap()).unwrap();
         match self.cli.fix(&s) {
             Ok(fixed) => {
                 let alert: vale::ValeAlert = serde_json::from_str(&s).unwrap();
