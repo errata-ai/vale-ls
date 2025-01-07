@@ -63,4 +63,4 @@ See the [documentation][4] for more information.
 [1]: https://microsoft.github.io/language-server-protocol/
 [2]: https://github.com/errata-ai/vale
 [3]: https://github.com/errata-ai/vale-ls/releases
-[4]: https://vale.sh/docs/integrations/guide/
+[4]: https://vale.sh/docs/guides/lsp
